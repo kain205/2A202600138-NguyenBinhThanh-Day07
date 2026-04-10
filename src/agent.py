@@ -18,12 +18,15 @@ class KnowledgeBaseAgent:
         self.llm_fn = llm_fn
 
     def answer(self, question: str, top_k: int = 3) -> str:
+        answer, _ = self.answer_with_sources(question, top_k=top_k)
+        return answer
+
+    def answer_with_sources(self, question: str, top_k: int = 3) -> tuple[str, list[dict]]:
         retrieved = self.store.search(question, top_k=top_k)
 
         context_lines = []
         for index, item in enumerate(retrieved, start=1):
-            context_lines.append(f"[{index}] score={item['score']:.4f}")
-            context_lines.append(item["content"])
+            context_lines.append(f"[{index}] {item['content']}")
 
         context = "\n\n".join(context_lines) if context_lines else "No relevant context found."
         prompt = (
@@ -33,4 +36,4 @@ class KnowledgeBaseAgent:
             f"Question: {question}\n"
             "Answer:"
         )
-        return self.llm_fn(prompt)
+        return self.llm_fn(prompt), retrieved

@@ -197,10 +197,9 @@ def do_query(query_choice: str, custom_query: str, strategy: str):
             return ("", "", "", "")
         if not query_text or query_text.startswith("TODO"):
             return ("", "", "", "")
-        info      = stores[s]
-        retrieved = info["store"].search(query_text, top_k=3)
-        answer    = info["agent"].answer(query_text, top_k=3)
-        chunks    = [_build_chunk_md(r, i + 1) for i, r in enumerate(retrieved[:3])]
+        info              = stores[s]
+        answer, retrieved = info["agent"].answer_with_sources(query_text, top_k=3)
+        chunks            = [_build_chunk_md(r, i + 1) for i, r in enumerate(retrieved[:3])]
         while len(chunks) < 3:
             chunks.append("")
         return (answer, chunks[0], chunks[1], chunks[2])

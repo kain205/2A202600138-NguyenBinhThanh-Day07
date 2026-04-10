@@ -75,7 +75,7 @@ Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu:
 | tsla-20251231.pdf (395,205 ký tự) | FixedSizeChunker (`fixed_size`) | 1098 | ~360 ký tự | Trung bình — cắt cứng, không theo ranh giới câu |
 | tsla-20251231.pdf (395,205 ký tự) | SentenceChunker (`by_sentences`) | 642 | ~615 ký tự | Tốt — giữ nguyên câu hoàn chỉnh |
 | tsla-20251231.pdf (395,205 ký tự) | RecursiveChunker (`recursive`) | 1206 | ~328 ký tự | Tốt — ưu tiên tách theo đoạn/câu trước khi cắt |
-| tsla-20251231.pdf (395,205 ký tự) | ParagraphChunker (`paragraph`) | *(TBD)* | *(TBD)* | Tốt — giữ nguyên đoạn văn, packing greedy theo `max_chunk_size` |
+| tsla-20251231.pdf (395,205 ký tự) | ParagraphChunker (`paragraph`) | 615 | ~800 ký tự | Tốt — giữ nguyên đoạn văn, packing greedy theo `max_chunk_size`; bị ảnh hưởng bởi PDF header noise |
 
 ### Strategy Của Tôi
 
@@ -104,7 +104,7 @@ Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu:
 | Nguyễn Bình Thành (tôi) | FixedSizeChunker | 5.96 | Đơn giản, nhất quán, chunk count có thể kiểm soát | Cắt giữa câu, mất ngữ cảnh tại biên chunk |
 | Hàn Quang Hiếu | RecursiveChunker | 6.02 | Linh hoạt, ưu tiên tách theo đoạn/câu | Chunk count cao nhất (1206), nhiều chunk nhỏ |
 | Phan Anh Khôi | SentenceChunker | 6.65 | Giữ câu hoàn chỉnh, embedding ngữ nghĩa chính xác hơn | Chunk count thấp nhất, câu dài vẫn có thể mang nhiều ý |
-| Trương Quang Lộc | ParagraphChunker | *(TBD)* | Giữ nguyên đoạn văn, chunk mang ý nghĩa hoàn chỉnh | *(TBD — đang fix bug chunk output)* |
+| Trương Quang Lộc | ParagraphChunker | 6.00 | Giữ nguyên đoạn văn, chunk mang ý nghĩa hoàn chỉnh hơn | PDF header "Tesla, Inc." tạo noise chunk — Q1 top-1 lệch, Q2 hallucinate HQ, Q3 miss hoàn toàn |
 
 **Strategy nào tốt nhất cho domain này? Tại sao?**
 > SentenceChunker cho retrieval score cao nhất (6.65/10) trên domain tài chính vì tài liệu 10-K có nhiều câu hoàn chỉnh chứa số liệu quan trọng — giữ nguyên câu giúp embedding capture đúng ngữ nghĩa hơn. FixedSizeChunker nhanh và đơn giản nhưng dễ cắt đứt giữa câu, đặc biệt bất lợi với văn bản dày đặc số liệu như báo cáo tài chính.
@@ -197,13 +197,13 @@ Chạy 5 benchmark queries của nhóm trên implementation cá nhân của bạ
 ## 7. What I Learned (5 điểm — Demo)
 
 **Điều hay nhất tôi học được từ thành viên khác trong nhóm:**
-> 
+> Học cách Hàn Quang Hiếu lấy BCTC
 
 **Điều hay nhất tôi học được từ nhóm khác (qua demo):**
-> *Viết 2-3 câu:*
+> Không có gì ấn tượng, quan sát thấy phần lớn các bạn toàn để AI hallucinate ra benchmark của riêng mình, tự đo chứ không theo SCORING.md gì
 
 **Nếu làm lại, tôi sẽ thay đổi gì trong data strategy?**
-> *Viết 2-3 câu:*
+> Chắc sẽ đọc kĩ bài toán để hiểu techinique chunking hơn, thay vì để AI handle phần lớn đoạn này
 
 ---
 
@@ -211,12 +211,12 @@ Chạy 5 benchmark queries của nhóm trên implementation cá nhân của bạ
 
 | Tiêu chí | Loại | Điểm tự đánh giá |
 |----------|------|-------------------|
-| Warm-up | Cá nhân | / 5 |
-| Document selection | Nhóm | / 10 |
-| Chunking strategy | Nhóm | / 15 |
-| My approach | Cá nhân | / 10 |
-| Similarity predictions | Cá nhân | / 5 |
-| Results | Cá nhân | / 10 |
-| Core implementation (tests) | Cá nhân | / 30 |
-| Demo | Nhóm | / 5 |
-| **Tổng** | | **/ 100** |
+| Warm-up | Cá nhân | 5 / 5 |
+| Document selection | Nhóm | 9 / 10 |
+| Chunking strategy | Nhóm | 13 / 15 |
+| My approach | Cá nhân | 10 / 10 |
+| Similarity predictions | 5 | / 5 |
+| Results | Cá nhân | 8 / 10 |
+| Core implementation (tests) | Cá nhân | 30 / 30 |
+| Demo | Nhóm | 4 / 5 |
+| **Tổng** | | **84 / 100** |
