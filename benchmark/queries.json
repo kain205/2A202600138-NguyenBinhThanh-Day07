@@ -1,0 +1,25 @@
+{
+  "_instructions": "Nhóm thống nhất 5 queries + gold answers trước khi mỗi người chạy benchmark. Xem README.md Phase 2.",
+  "queries": [
+    {
+      "query": "TODO: query 1 của nhóm",
+      "gold_answer": "TODO: câu trả lời mong đợi cho query 1"
+    },
+    {
+      "query": "TODO: query 2 của nhóm",
+      "gold_answer": "TODO: câu trả lời mong đợi cho query 2"
+    },
+    {
+      "query": "TODO: query 3 của nhóm",
+      "gold_answer": "TODO: câu trả lời mong đợi cho query 3"
+    },
+    {
+      "query": "TODO: query 4 của nhóm",
+      "gold_answer": "TODO: câu trả lời mong đợi cho query 4"
+    },
+    {
+      "query": "TODO: query 5 của nhóm",
+      "gold_answer": "TODO: câu trả lời mong đợi cho query 5"
+    }
+  ]
+}
