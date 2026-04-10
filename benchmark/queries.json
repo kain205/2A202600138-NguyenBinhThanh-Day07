@@ -3,23 +3,28 @@
   "queries": [
     {
       "query": "How many employees did Tesla have as of end of 2025?",
-      "gold_answer": "As of December 31, 2025, Tesla had 134,785 employees worldwide."
+      "gold_answer": "As of December 31, 2025, Tesla had 134,785 employees worldwide.",
+      "source_key_sentence": "As of December 31, 2025, our employee headcount worldwide was 134,785."
     },
     {
-      "query": "TODO: query 2 của nhóm",
-      "gold_answer": "TODO: câu trả lời mong đợi cho query 2"
+      "query": "Where is Tesla headquartered and what are its primary manufacturing locations?",
+      "gold_answer": "Tesla is headquartered in Austin, Texas. Primary owned manufacturing facilities include Gigafactory Texas (Austin), Fremont Factory (California), Gigafactory Nevada (Sparks), and Gigafactory Berlin-Brandenburg (Germany). Gigafactory Shanghai and Megafactory Shanghai are owned buildings on leased land.",
+      "source_key_sentence": "We are headquartered in Austin, Texas. Our principal facilities include a large number of properties in North America, Europe and Asia utilized for manufacturing and assembly."
     },
     {
-      "query": "TODO: query 3 của nhóm",
-      "gold_answer": "TODO: câu trả lời mong đợi cho query 3"
+      "query": "Does Tesla pay dividends to its shareholders?",
+      "gold_answer": "Tesla has never declared or paid cash dividends on its common stock and does not anticipate paying any in the foreseeable future.",
+      "source_key_sentence": "We have never declared or paid cash dividends on our common stock. We currently do not anticipate paying any cash dividends in the foreseeable future."
     },
     {
-      "query": "TODO: query 4 của nhóm",
-      "gold_answer": "TODO: câu trả lời mong đợi cho query 4"
+      "query": "What autonomous vehicle product is Tesla developing for the robotaxi market?",
+      "gold_answer": "Tesla is developing Cybercab, a purpose-built Robotaxi product, alongside its FSD (Supervised) and neural network capabilities to compete in the autonomous vehicle and ride-hailing market.",
+      "source_key_sentence": "Our future business depends on development of our driver assistance systems and autonomous driving solutions and increasing the production of mass-market vehicles, including Cybercab, our purpose-built Robotaxi product."
     },
     {
-      "query": "TODO: query 5 của nhóm",
-      "gold_answer": "TODO: câu trả lời mong đợi cho query 5"
+      "query": "How does Tesla protect its intellectual property while still supporting EV industry growth?",
+      "gold_answer": "Tesla seeks patent protection broadly but has pledged not to initiate lawsuits against parties that infringe its patents through activity relating to electric vehicles or related equipment, as long as they act in good faith — to encourage development of a common EV platform.",
+      "source_key_sentence": "We have also adopted a patent policy in which we irrevocably pledged that we will not initiate a lawsuit against any party for infringing our patents through activity relating to electric vehicles or related equipment for so long as such party is acting in good faith."
     }
   ]
 }

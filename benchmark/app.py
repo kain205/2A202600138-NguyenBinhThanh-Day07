@@ -129,22 +129,23 @@ def load_stores() -> tuple[dict, str]:
     if not stores:
         status = "❌ No embeddings found — run `python benchmark/embed.py` first."
     else:
-        source = next(
-            (json.loads((EMBEDDINGS_DIR / f"{s}.json").read_text())["source"]
+        first_data = next(
+            (json.loads((EMBEDDINGS_DIR / f"{s}.json").read_text(encoding="utf-8"))
              for s in STRATEGIES if (EMBEDDINGS_DIR / f"{s}.json").exists()),
-            "unknown"
+            {}
         )
-        embedder_name = next(
-            (json.loads((EMBEDDINGS_DIR / f"{s}.json").read_text())["embedder"]
-             for s in STRATEGIES if (EMBEDDINGS_DIR / f"{s}.json").exists()),
-            "unknown"
-        )
+        source       = first_data.get("source", "unknown")
+        embedder_name = first_data.get("embedder", "unknown")
         status = (
             f"✅ Loaded **{source}** · Embedder: `{embedder_name}`\n\n"
             + "  ·  ".join(meta_parts)
         )
 
     return stores, status
+
+# ── module-level globals (not picklable → can't go in gr.State) ──────────────
+_STORES:  dict = {}
+_QUERIES: list[dict] = []
 
 # ── queries ───────────────────────────────────────────────────────────────────
 
@@ -173,13 +174,10 @@ def _build_chunk_md(r: dict, idx: int) -> str:
     return f"**[{idx}] Score: {score:.4f}** · `{source}`\n\n{content}"
 
 
-def do_query(
-    query_choice: str,
-    custom_query: str,
-    strategy: str,
-    stores: dict | None,
-    queries: list[dict],
-):
+def do_query(query_choice: str, custom_query: str, strategy: str):
+    stores  = _STORES
+    queries = _QUERIES
+
     query_text = (custom_query or "").strip()
     gold = ""
 
@@ -208,7 +206,7 @@ def do_query(
         return (answer, chunks[0], chunks[1], chunks[2])
 
     if not stores:
-        warn   = "⚠️ Embeddings not loaded — run `python benchmark/embed.py` first."
+        warn    = "⚠️ Embeddings not loaded — run `python benchmark/embed.py` first."
         r_empty = (warn, "", "", "")
     else:
         r_empty = ("", "", "", "")
@@ -222,11 +220,6 @@ def do_query(
     r_sentence  = run_one("sentence")  if vis_s else r_empty
     r_recursive = run_one("recursive") if vis_r else r_empty
 
-    if not stores:
-        if vis_f: r_fixed     = r_empty
-        if vis_s: r_sentence  = r_empty
-        if vis_r: r_recursive = r_empty
-
     return (
         gold,
         gr.update(visible=vis_f),    *r_fixed,
@@ -235,7 +228,8 @@ def do_query(
     )
 
 
-def on_query_select(choice: str, queries: list[dict]) -> str:
+def on_query_select(choice: str) -> str:
+    queries = _QUERIES
     if not choice:
         return ""
     try:
@@ -250,14 +244,12 @@ def on_query_select(choice: str, queries: list[dict]) -> str:
 # ── UI ────────────────────────────────────────────────────────────────────────
 
 def build_ui() -> gr.Blocks:
-    queries  = load_queries()
-    q_labels = query_dropdown_choices(queries)
-    stores, load_status = load_stores()
+    global _STORES, _QUERIES
+    _QUERIES = load_queries()
+    q_labels = query_dropdown_choices(_QUERIES)
+    _STORES, load_status = load_stores()
 
     with gr.Blocks(title="RAG Benchmark Demo", theme=gr.themes.Soft()) as demo:
-        state_stores  = gr.State(stores)
-        state_queries = gr.State(queries)
-
         gr.Markdown("# RAG Benchmark Demo")
         gr.Markdown(load_status)
 
@@ -325,13 +317,13 @@ def build_ui() -> gr.Blocks:
         # Wiring
         query_dropdown.change(
             fn=on_query_select,
-            inputs=[query_dropdown, state_queries],
+            inputs=[query_dropdown],
             outputs=[query_text],
         )
 
         run_btn.click(
             fn=do_query,
-            inputs=[query_dropdown, query_text, strategy_radio, state_stores, state_queries],
+            inputs=[query_dropdown, query_text, strategy_radio],
             outputs=[
                 gold_box,
                 fixed_col,    fixed_answer,    fixed_c1,    fixed_c2,    fixed_c3,
