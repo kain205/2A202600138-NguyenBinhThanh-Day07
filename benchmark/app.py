@@ -40,8 +40,8 @@ BENCHMARK_DIR  = Path(__file__).parent
 EMBEDDINGS_DIR = BENCHMARK_DIR / "embeddings"
 QUERIES_FILE   = BENCHMARK_DIR / "queries.json"
 
-STRATEGIES      = ["fixed", "sentence", "recursive"]
-STRATEGY_LABELS = {"fixed": "Fixed Size", "sentence": "Sentence", "recursive": "Recursive"}
+STRATEGIES      = ["fixed", "sentence", "recursive", "paragraph"]
+STRATEGY_LABELS = {"fixed": "Fixed Size", "sentence": "Sentence", "recursive": "Recursive", "paragraph": "Paragraph"}
 
 # ── load pre-computed embeddings ──────────────────────────────────────────────
 
@@ -215,16 +215,19 @@ def do_query(query_choice: str, custom_query: str, strategy: str):
     vis_f   = is_all3 or strategy == "fixed"
     vis_s   = is_all3 or strategy == "sentence"
     vis_r   = is_all3 or strategy == "recursive"
+    vis_p   = is_all3 or strategy == "paragraph"
 
     r_fixed     = run_one("fixed")     if vis_f else r_empty
     r_sentence  = run_one("sentence")  if vis_s else r_empty
     r_recursive = run_one("recursive") if vis_r else r_empty
+    r_paragraph = run_one("paragraph") if vis_p else r_empty
 
     return (
         gold,
         gr.update(visible=vis_f),    *r_fixed,
         gr.update(visible=vis_s),    *r_sentence,
         gr.update(visible=vis_r),    *r_recursive,
+        gr.update(visible=vis_p),    *r_paragraph,
     )
 
 
@@ -265,7 +268,7 @@ def build_ui() -> gr.Blocks:
                     scale=4,
                 )
                 strategy_radio = gr.Radio(
-                    choices=["fixed", "sentence", "recursive", "All 3"],
+                    choices=["fixed", "sentence", "recursive", "paragraph", "All 3"],
                     value="fixed",
                     label="Chunking strategy",
                     scale=2,
@@ -314,6 +317,16 @@ def build_ui() -> gr.Blocks:
                     gr.Markdown("---")
                     recursive_c3 = gr.Markdown()
 
+            with gr.Column(visible=False) as paragraph_col:
+                gr.Markdown("#### Paragraph")
+                paragraph_answer = gr.Textbox(label="AI Answer", interactive=False, lines=4)
+                with gr.Accordion("Top 3 Chunks", open=True):
+                    paragraph_c1 = gr.Markdown()
+                    gr.Markdown("---")
+                    paragraph_c2 = gr.Markdown()
+                    gr.Markdown("---")
+                    paragraph_c3 = gr.Markdown()
+
         # Wiring
         query_dropdown.change(
             fn=on_query_select,
@@ -326,9 +339,10 @@ def build_ui() -> gr.Blocks:
             inputs=[query_dropdown, query_text, strategy_radio],
             outputs=[
                 gold_box,
-                fixed_col,    fixed_answer,    fixed_c1,    fixed_c2,    fixed_c3,
-                sentence_col, sentence_answer, sentence_c1, sentence_c2, sentence_c3,
-                recursive_col,recursive_answer,recursive_c1,recursive_c2,recursive_c3,
+                fixed_col,     fixed_answer,     fixed_c1,     fixed_c2,     fixed_c3,
+                sentence_col,  sentence_answer,  sentence_c1,  sentence_c2,  sentence_c3,
+                recursive_col, recursive_answer, recursive_c1, recursive_c2, recursive_c3,
+                paragraph_col, paragraph_answer, paragraph_c1, paragraph_c2, paragraph_c3,
             ],
         )
 

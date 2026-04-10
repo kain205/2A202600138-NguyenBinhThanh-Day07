@@ -50,18 +50,17 @@
 
 | # | Tên tài liệu | Nguồn | Số ký tự | Metadata đã gán |
 |---|--------------|-------|----------|-----------------|
-| 1 | | | | |
-| 2 | | | | |
-| 3 | | | | |
-| 4 | | | | |
-| 5 | | | | |
+| 1 | tsla-20251231.pdf (Tesla 10-K Annual Report 2025, 169 trang) | SEC EDGAR / Tesla IR | 395,205 | source, company, doc_type, fiscal_year, chunk_index |
 
 ### Metadata Schema
 
 | Trường metadata | Kiểu | Ví dụ giá trị | Tại sao hữu ích cho retrieval? |
 |----------------|------|---------------|-------------------------------|
-| | | | |
-| | | | |
+| `source` | string | `"tsla-20251231.pdf"` | Xác định tài liệu gốc, hỗ trợ filter theo file và delete_document |
+| `company` | string | `"Tesla"` | Filter kết quả theo công ty khi có nhiều tài liệu nhiều công ty |
+| `doc_type` | string | `"10-K Annual Report"` | Phân loại loại báo cáo (10-K, 10-Q, earnings call...) |
+| `fiscal_year` | int | `2025` | Filter theo năm tài chính, tránh trộn số liệu nhiều năm |
+| `chunk_index` | int | `42` | Xác định vị trí chunk trong tài liệu, hỗ trợ lấy context xung quanh |
 
 ---
 
@@ -73,42 +72,42 @@ Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu:
 
 | Tài liệu | Strategy | Chunk Count | Avg Length | Preserves Context? |
 |-----------|----------|-------------|------------|-------------------|
-| | FixedSizeChunker (`fixed_size`) | | | |
-| | SentenceChunker (`by_sentences`) | | | |
-| | RecursiveChunker (`recursive`) | | | |
+| tsla-20251231.pdf (395,205 ký tự) | FixedSizeChunker (`fixed_size`) | 1098 | ~360 ký tự | Trung bình — cắt cứng, không theo ranh giới câu |
+| tsla-20251231.pdf (395,205 ký tự) | SentenceChunker (`by_sentences`) | 642 | ~615 ký tự | Tốt — giữ nguyên câu hoàn chỉnh |
+| tsla-20251231.pdf (395,205 ký tự) | RecursiveChunker (`recursive`) | 1206 | ~328 ký tự | Tốt — ưu tiên tách theo đoạn/câu trước khi cắt |
+| tsla-20251231.pdf (395,205 ký tự) | ParagraphChunker (`paragraph`) | *(TBD)* | *(TBD)* | Tốt — giữ nguyên đoạn văn, packing greedy theo `max_chunk_size` |
 
 ### Strategy Của Tôi
 
-**Loại:** [FixedSizeChunker / SentenceChunker / RecursiveChunker / custom strategy]
+**Loại:** FixedSizeChunker
 
 **Mô tả cách hoạt động:**
-> *Viết 3-4 câu: strategy chunk thế nào? Dựa trên dấu hiệu gì?*
+> FixedSizeChunker chia văn bản thành các đoạn có độ dài cố định (tính theo số ký tự), với một khoảng overlap giữa các chunk liền kề để tránh mất thông tin tại điểm cắt. Cách chia không dựa vào bất kỳ dấu hiệu ngôn ngữ nào (câu, đoạn văn), mà đơn thuần trượt cửa sổ kích thước cố định qua toàn bộ văn bản. Kết quả là số chunk và độ dài chunk hoàn toàn có thể dự đoán được từ tham số đầu vào.
 
 **Tại sao tôi chọn strategy này cho domain nhóm?**
-> *Viết 2-3 câu: domain có pattern gì mà strategy khai thác?*
+> Tài liệu tài chính như 10-K có nhiều bảng số liệu và danh sách bullet point — các cấu trúc này không nhất thiết phải giữ nguyên câu để vẫn mang ý nghĩa. FixedSizeChunker đảm bảo mỗi embedding có kích thước nhất quán, tránh hiện tượng embedding lệch do độ dài quá chênh lệch. Ngoài ra tốc độ chunking nhanh phù hợp khi cần xử lý tài liệu lớn như báo cáo thường niên 395K ký tự.
 
 **Code snippet (nếu custom):**
-```python
-# Paste implementation here
-```
+> Sử dụng built-in `FixedSizeChunker`, không custom thêm.
 
 ### So Sánh: Strategy của tôi vs Baseline
 
 | Tài liệu | Strategy | Chunk Count | Avg Length | Retrieval Quality? |
 |-----------|----------|-------------|------------|--------------------|
-| | best baseline | | | |
-| | **của tôi** | | | |
+| tsla-20251231.pdf | SentenceChunker (best baseline) | 642 | ~615 ký tự | 6.65/10 avg |
+| tsla-20251231.pdf | **FixedSizeChunker (của tôi)** | 1098 | ~360 ký tự | 5.96/10 avg |
 
 ### So Sánh Với Thành Viên Khác
 
 | Thành viên | Strategy | Retrieval Score (/10) | Điểm mạnh | Điểm yếu |
 |-----------|----------|----------------------|-----------|----------|
-| Tôi | | | | |
-| [Tên] | | | | |
-| [Tên] | | | | |
+| Nguyễn Bình Thành (tôi) | FixedSizeChunker | 5.96 | Đơn giản, nhất quán, chunk count có thể kiểm soát | Cắt giữa câu, mất ngữ cảnh tại biên chunk |
+| Hàn Quang Hiếu | RecursiveChunker | 6.02 | Linh hoạt, ưu tiên tách theo đoạn/câu | Chunk count cao nhất (1206), nhiều chunk nhỏ |
+| Phan Anh Khôi | SentenceChunker | 6.65 | Giữ câu hoàn chỉnh, embedding ngữ nghĩa chính xác hơn | Chunk count thấp nhất, câu dài vẫn có thể mang nhiều ý |
+| Trương Quang Lộc | ParagraphChunker | *(TBD)* | Giữ nguyên đoạn văn, chunk mang ý nghĩa hoàn chỉnh | *(TBD — đang fix bug chunk output)* |
 
 **Strategy nào tốt nhất cho domain này? Tại sao?**
-> *Viết 2-3 câu:*
+> SentenceChunker cho retrieval score cao nhất (6.65/10) trên domain tài chính vì tài liệu 10-K có nhiều câu hoàn chỉnh chứa số liệu quan trọng — giữ nguyên câu giúp embedding capture đúng ngữ nghĩa hơn. FixedSizeChunker nhanh và đơn giản nhưng dễ cắt đứt giữa câu, đặc biệt bất lợi với văn bản dày đặc số liệu như báo cáo tài chính.
 
 ---
 
@@ -152,14 +151,14 @@ Giải thích cách tiếp cận của bạn khi implement các phần chính tr
 
 | Pair | Sentence A | Sentence B | Dự đoán | Actual Score | Đúng? |
 |------|-----------|-----------|---------|--------------|-------|
-| 1 | | | high / low | | |
-| 2 | | | high / low | | |
-| 3 | | | high / low | | |
-| 4 | | | high / low | | |
-| 5 | | | high / low | | |
+| 1 | Tesla had 134,785 employees as of December 31, 2025 | Tesla's global workforce numbered 134,785 people at year-end | high | 0.95 | ✅ |
+| 2 | Tesla pays no cash dividends on its common stock | Tesla does not distribute dividends to shareholders | high | 0.91 | ✅ |
+| 3 | Cybercab is Tesla's purpose-built robotaxi product | Tesla Autopilot is a driver-assistance software feature | low | 0.61 | ✅ |
+| 4 | Tesla total revenues for fiscal year 2025 | Tesla annual sales and financial performance figures | high | 0.84 | ✅ |
+| 5 | Gigafactory Texas is located in Austin | Tesla's solar panel installation process for residential homes | low | 0.38 | ✅ |
 
 **Kết quả nào bất ngờ nhất? Điều này nói gì về cách embeddings biểu diễn nghĩa?**
-> *Viết 2-3 câu:*
+> Pair 3 bất ngờ nhất — "Cybercab robotaxi" và "Autopilot software feature" đều là sản phẩm Tesla liên quan đến autonomous driving nhưng score chỉ 0.61, thấp hơn dự kiến. Điều này cho thấy embedding phân biệt được mức độ trừu tượng: một bên là phần cứng (xe), một bên là phần mềm (tính năng), dù cùng ngữ cảnh công ty. Embeddings không chỉ nắm bắt từ khóa chung mà còn encode loại thực thể và vai trò của nó trong câu.
 
 ---
 
@@ -171,30 +170,34 @@ Chạy 5 benchmark queries của nhóm trên implementation cá nhân của bạ
 
 | # | Query | Gold Answer |
 |---|-------|-------------|
-| 1 | | |
-| 2 | | |
-| 3 | | |
-| 4 | | |
-| 5 | | |
+| 1 | How many employees did Tesla have as of end of 2025? | As of December 31, 2025, Tesla had 134,785 employees worldwide. |
+| 2 | Where is Tesla headquartered and what are its primary manufacturing locations? | Tesla is headquartered in Austin, Texas. Primary owned manufacturing facilities include Gigafactory Texas (Austin), Fremont Factory (California), Gigafactory Nevada (Sparks), and Gigafactory Berlin-Brandenburg (Germany). Gigafactory Shanghai and Megafactory Shanghai are owned buildings on leased land. |
+| 3 | Does Tesla pay dividends to its shareholders? | Tesla has never declared or paid cash dividends on its common stock and does not anticipate paying any in the foreseeable future. |
+| 4 | What autonomous vehicle product is Tesla developing for the robotaxi market? | Tesla is developing Cybercab, a purpose-built Robotaxi product, alongside its FSD (Supervised) and neural network capabilities to compete in the autonomous vehicle and ride-hailing market. |
+| 5 | How does Tesla protect its intellectual property while still supporting EV industry growth? | Tesla seeks patent protection broadly but has pledged not to initiate lawsuits against parties that infringe its patents through activity relating to electric vehicles or related equipment, as long as they act in good faith — to encourage development of a common EV platform. |
 
 ### Kết Quả Của Tôi
 
-| # | Query | Top-1 Retrieved Chunk (tóm tắt) | Score | Relevant? | Agent Answer (tóm tắt) |
-|---|-------|--------------------------------|-------|-----------|------------------------|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
-| 4 | | | | | |
-| 5 | | | | | |
+> Sử dụng **FixedSizeChunker**.
 
-**Bao nhiêu queries trả về chunk relevant trong top-3?** __ / 5
+| # | Query | Top-1 Retrieved Chunk (tóm tắt) | Score | Relevant? | Agent Answer (tóm tắt) | Điểm |
+|---|-------|--------------------------------|-------|-----------|------------------------|------|
+| 1 | Tesla employees end of 2025? | "29,000 employees globally advancing their careers in 2025..." (chunk về career programs, không phải headcount) | 0.6139 | Partial | Answer đúng (134,785) nhờ chunk top-2 có số liệu; relevant chunk không ở top-1. | 1/2 |
+| 2 | Tesla HQ & primary manufacturing locations? | Bảng primary manufacturing facilities (Gigafactory Texas, Fremont, Gigafactory NV, Berlin-Brandenburg, Gigafactory Shanghai, Megafactory Shanghai, Gigafactory NY, Megafactory Lathrop) | 0.5693 | Yes | HQ: Austin, TX. Danh sách đầy đủ các cơ sở owned và leased. | 2/2 |
+| 3 | Tesla pay dividends? | Consolidated Statements of Equity — không liên quan đến dividend policy | 0.5665 | No | Top-3 không có chunk nào về chính sách cổ tức. AI answer: "does not specify." | 0/2 |
+| 4 | Tesla autonomous vehicle for robotaxi market? | "Our Robotaxi business currently operates with Model Y vehicles... products such as FSD (Supervised)" | 0.6372 | Yes | Tesla is developing the Robotaxi product, specifically the Cybercab. | 2/2 |
+| 5 | Tesla IP protection & EV growth? | "irrevocably pledged that we will not initiate a lawsuit against any party for infringing our patents through activity relating to electric vehicles..." | 0.5907 | Yes | Tesla bảo vệ IP qua patent, cam kết không kiện bên vi phạm bằng sáng chế EV miễn họ hành động thiện chí. | 2/2 |
+
+**Bao nhiêu queries trả về chunk relevant trong top-3?** 4 / 5 (Q3 miss hoàn toàn)
+
+**Tổng điểm Results:** 7 / 10
 
 ---
 
 ## 7. What I Learned (5 điểm — Demo)
 
 **Điều hay nhất tôi học được từ thành viên khác trong nhóm:**
-> *Viết 2-3 câu:*
+> 
 
 **Điều hay nhất tôi học được từ nhóm khác (qua demo):**
 > *Viết 2-3 câu:*

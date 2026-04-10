@@ -34,13 +34,14 @@ from src import (
     LocalEmbedder,
     MockEmbedder,
     OpenAIEmbedder,
+    ParagraphChunker,
     RecursiveChunker,
     SentenceChunker,
 )
 
 BENCHMARK_DIR   = Path(__file__).parent
 EMBEDDINGS_DIR  = BENCHMARK_DIR / "embeddings"
-STRATEGY_LABELS = {"fixed": "Fixed Size", "sentence": "Sentence", "recursive": "Recursive"}
+STRATEGY_LABELS = {"fixed": "Fixed Size", "sentence": "Sentence", "recursive": "Recursive", "paragraph": "Paragraph"}
 
 # ── file helpers ──────────────────────────────────────────────────────────────
 
@@ -110,6 +111,8 @@ def main() -> None:
     parser.add_argument("--chunk-size", type=int, default=400)
     parser.add_argument("--overlap",    type=int, default=40)
     parser.add_argument("--sentences",  type=int, default=3)
+    parser.add_argument("--strategy",   choices=["fixed", "sentence", "recursive", "paragraph"], default=None,
+                        help="Only embed one strategy (default: all)")
     args = parser.parse_args()
 
     # Resolve file
@@ -138,11 +141,13 @@ def main() -> None:
     print(f"Embedder : {embedder._backend_name}")
 
     # Build chunkers
-    chunkers = {
+    all_chunkers = {
         "fixed":     FixedSizeChunker(chunk_size=args.chunk_size, overlap=args.overlap),
         "sentence":  SentenceChunker(max_sentences_per_chunk=args.sentences),
         "recursive": RecursiveChunker(chunk_size=args.chunk_size),
+        "paragraph": ParagraphChunker(max_chunk_size=args.chunk_size * 2),
     }
+    chunkers = {args.strategy: all_chunkers[args.strategy]} if args.strategy else all_chunkers
 
     EMBEDDINGS_DIR.mkdir(exist_ok=True)
     fname = file_path.name

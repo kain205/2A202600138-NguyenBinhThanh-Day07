@@ -134,6 +134,73 @@ class RecursiveChunker:
         return results
 
 
+class ParagraphChunker:
+    """
+    Split text by grouping complete paragraphs up to max_chunk_size characters.
+
+    A paragraph is a block of text separated by one or more blank lines.
+    Paragraphs are greedily packed until the next one would exceed the limit.
+    Paragraphs longer than max_chunk_size are split by sentences as fallback.
+    """
+
+    _PARA_SPLIT = re.compile(r"\n\s*\n")
+    _SENT_SPLIT = re.compile(r"(?<=[.!?])(?:\s+|\n+)")
+
+    def __init__(self, max_chunk_size: int = 800) -> None:
+        self.max_chunk_size = max_chunk_size
+
+    def chunk(self, text: str) -> list[str]:
+        if not text or not text.strip():
+            return []
+
+        paragraphs = [p.strip() for p in self._PARA_SPLIT.split(text.strip()) if p.strip()]
+        if not paragraphs:
+            return [text.strip()]
+
+        chunks: list[str] = []
+        current_parts: list[str] = []
+        current_len = 0
+
+        for para in paragraphs:
+            if len(para) > self.max_chunk_size:
+                sentences = [s.strip() for s in self._SENT_SPLIT.split(para) if s.strip()]
+                # Carry over any accumulated short paragraphs into the first sentence chunk
+                # so headers like "Tesla, Inc." don't become standalone noise chunks.
+                sub: list[str] = []
+                sub_len = 0
+                if current_parts:
+                    seed = "\n\n".join(current_parts)
+                    sub = [seed]
+                    sub_len = len(seed)
+                    current_parts = []
+                    current_len = 0
+                for sent in sentences:
+                    if sub and sub_len + len(sent) + 1 > self.max_chunk_size:
+                        chunks.append(" ".join(sub))
+                        sub = [sent]
+                        sub_len = len(sent)
+                    else:
+                        sub.append(sent)
+                        sub_len += len(sent) + 1
+                if sub:
+                    chunks.append(" ".join(sub))
+                continue
+
+            added_len = len(para) + (2 if current_parts else 0)
+            if current_parts and current_len + added_len > self.max_chunk_size:
+                chunks.append("\n\n".join(current_parts))
+                current_parts = [para]
+                current_len = len(para)
+            else:
+                current_parts.append(para)
+                current_len += added_len
+
+        if current_parts:
+            chunks.append("\n\n".join(current_parts))
+
+        return chunks
+
+
 def _dot(a: list[float], b: list[float]) -> float:
     return sum(x * y for x, y in zip(a, b))
 
