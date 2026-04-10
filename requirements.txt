@@ -1,6 +1,6 @@
 pytest>=7.0
 python-dotenv>=1.0
-
+pypdf
 # Optional manual-demo extras
 # Install local embedder support with:
 #   pip install sentence-transformers

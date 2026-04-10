@@ -1,8 +1,8 @@
 # Báo Cáo Lab 7: Embedding & Vector Store
 
-**Họ tên:** [Tên sinh viên]
-**Nhóm:** [Tên nhóm]
-**Ngày:** [Ngày nộp]
+**Họ tên:** Nguyễn Bình Thành
+**Nhóm:** 29
+**Ngày:** 10/4/2026
 
 ---
 
@@ -11,29 +11,29 @@
 ### Cosine Similarity (Ex 1.1)
 
 **High cosine similarity nghĩa là gì?**
-> *Viết 1-2 câu:*
+> Trong không gian vector, vector A "gần" vector B hơn, cụ thể thì nếu hai vector có hướng gần nhau sẽ làm góc giữa chúng nhỏ hơn -> gần hơn trong không gian vector 
 
 **Ví dụ HIGH similarity:**
-- Sentence A:
-- Sentence B:
-- Tại sao tương đồng:
+- Sentence A: con mèo
+- Sentence B: mèo con
+- Tại sao tương đồng: đều thuộc vùng "mèo" trong vector space
 
 **Ví dụ LOW similarity:**
-- Sentence A:
-- Sentence B:
-- Tại sao khác:
+- Sentence A: con mèo
+- Sentence B: con chó
+- Tại sao khác: cùng là động vật nhưng khác thực thể, nếu không chung 1 ngữ cảnh hai sentence sẽ chiếm vị trí khác nhau trong không gian vector
 
 **Tại sao cosine similarity được ưu tiên hơn Euclidean distance cho text embeddings?**
-> *Viết 1-2 câu:*
+> Cosine similarity tập trung vào hướng của vector thay vì độ lớn, còn Euclidean distance tập trung vào khoảng cách. Khi so sánh ngữ nghĩa, độ dài vector không phản ánh trực tiếp mức giống nghĩa, vì vậy cosine thường phù hợp hơn Euclidean distance.
 
 ### Chunking Math (Ex 1.2)
 
 **Document 10,000 ký tự, chunk_size=500, overlap=50. Bao nhiêu chunks?**
-> *Trình bày phép tính:*
-> *Đáp án:*
+> *Trình bày phép tính:* dùng công thức num_chunks = ceil((doc_length - overlap) / (chunk_size - overlap)). đơn giản thôi ceil(9950 / 450) = ceil(22.111) = 23
+> *Đáp án:* 23
 
 **Nếu overlap tăng lên 100, chunk count thay đổi thế nào? Tại sao muốn overlap nhiều hơn?**
-> *Viết 1-2 câu:*
+> Overlap tăng làm step giảm, nên số chunk tăng. Overlap nhiều thì sẽ làm tăng số chunk, em chưa hiểu câu hỏi? tại sao lại mặc định là muốn overlap? overlap có thể có lợi và hại mà 
 
 ---
 
@@ -41,10 +41,10 @@
 
 ### Domain & Lý Do Chọn
 
-**Domain:** [ví dụ: Customer support FAQ, Vietnamese law, cooking recipes, ...]
+**Domain:** Finance
 
 **Tại sao nhóm chọn domain này?**
-> *Viết 2-3 câu:*
+> Tại vì nó khó, tài liệu tài chính có nhiều số liệu, cần độ chính xác.
 
 ### Data Inventory
 
@@ -119,31 +119,32 @@ Giải thích cách tiếp cận của bạn khi implement các phần chính tr
 ### Chunking Functions
 
 **`SentenceChunker.chunk`** — approach:
-> *Viết 2-3 câu: dùng regex gì để detect sentence? Xử lý edge case nào?*
+> Tách câu bằng regex theo dấu kết câu (., !, ?) kết hợp khoảng trắng hoặc xuống dòng: `(?<=[.!?])(?:\s+|\n+)`. Sau khi split sẽ strip và loại phần rỗng để tránh chunk rác. Cuối cùng gom câu theo `max_sentences_per_chunk` để đảm bảo output ổn định.
 
 **`RecursiveChunker.chunk` / `_split`** — approach:
-> *Viết 2-3 câu: algorithm hoạt động thế nào? Base case là gì?*
+> Thuật toán thử tách theo thứ tự separator ưu tiên (`\n\n`, `\n`, `. `, ` `, rồi fallback ký tự). Base case: chuỗi rỗng thì bỏ qua, chuỗi có độ dài <= `chunk_size` thì trả về ngay, hết separator thì cắt cứng theo `chunk_size`. Trong quá trình split có bước "pack" lại các phần nhỏ để tạo chunk dài nhất có thể mà vẫn không vượt ngưỡng.
 
 ### EmbeddingStore
 
 **`add_documents` + `search`** — approach:
-> *Viết 2-3 câu: lưu trữ thế nào? Tính similarity ra sao?*
+> Mỗi document được chuẩn hóa thành record gồm `id`, `content`, `metadata`, `embedding`; metadata luôn gắn thêm `doc_id` để hỗ trợ delete theo tài liệu gốc. `add_documents` tạo embedding một lần và lưu vào store in-memory; nếu Chroma khả dụng thì đồng bộ thêm vào collection. `search` embed query rồi chấm điểm bằng dot product với từng embedding, sau đó sort giảm dần theo score.
 
 **`search_with_filter` + `delete_document`** — approach:
-> *Viết 2-3 câu: filter trước hay sau? Delete bằng cách nào?*
+> `search_with_filter` thực hiện filter metadata trước, rồi mới chạy similarity trên tập con để tăng precision. Điều kiện filter dùng match đầy đủ theo cặp key-value trong `metadata_filter`. `delete_document` xóa toàn bộ record có `metadata.doc_id == doc_id`, đồng thời thử xóa trên Chroma nếu backend này đang bật.
 
 ### KnowledgeBaseAgent
 
 **`answer`** — approach:
-> *Viết 2-3 câu: prompt structure? Cách inject context?*
+> Agent retrieve top-k chunks từ store, rồi ghép thành context có kèm score để tăng tính minh bạch. Prompt được cấu trúc theo dạng instruction + context + question, yêu cầu model chỉ trả lời dựa trên context và nói rõ khi thiếu dữ kiện. Cách này giúp hạn chế hallucination và bám sát RAG pattern.
 
 ### Test Results
 
 ```
 # Paste output of: pytest tests/ -v
+===================================== 42 passed in 1.05s ======================================
 ```
 
-**Số tests pass:** __ / __
+**Số tests pass:** 42 / 42
 
 ---
 
