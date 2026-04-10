@@ -2,8 +2,8 @@
   "_instructions": "Nhóm thống nhất 5 queries + gold answers trước khi mỗi người chạy benchmark. Xem README.md Phase 2.",
   "queries": [
     {
-      "query": "TODO: query 1 của nhóm",
-      "gold_answer": "TODO: câu trả lời mong đợi cho query 1"
+      "query": "How many employees did Tesla have as of end of 2025?",
+      "gold_answer": "As of December 31, 2025, Tesla had 134,785 employees worldwide."
     },
     {
       "query": "TODO: query 2 của nhóm",
